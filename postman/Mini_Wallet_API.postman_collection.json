@@ -1,0 +1,695 @@
+{
+	"info": {
+		"_postman_id": "mini-wallet-api-collection",
+		"name": "Mini Wallet API",
+		"description": "Complete API collection for Mini Wallet application with authentication, wallet management, transactions, and beneficiary management. Includes professional test data with 15 verified users and realistic transaction scenarios.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Test Data & Credentials",
+			"item": [
+				{
+					"name": "Test Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/test-data",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"test-data"
+							]
+						},
+						"description": "Test users available in the system:\n\n**Primary Test User:**\n- Email: alexander.johnson@example.com\n- Password: password123\n- Balance: $25,000\n\n**Secondary Test Users:**\n- sarah.williams@example.com (Balance: $15,000)\n- michael.brown@example.com (Balance: $35,000)\n- emily.davis@example.com (Balance: $12,000)\n- david.miller@example.com (Balance: $45,000)\n- jessica.wilson@example.com (Balance: $18,000)\n- christopher.moore@example.com (Balance: $30,000)\n- amanda.taylor@example.com (Balance: $22,000)\n- james.anderson@example.com (Balance: $28,000)\n- jennifer.thomas@example.com (Balance: $16,000)\n- robert.jackson@example.com (Balance: $32,000)\n- lisa.white@example.com (Balance: $19,000)\n- daniel.harris@example.com (Balance: $41,000)\n- michelle.martin@example.com (Balance: $14,000)\n- kevin.garcia@example.com (Balance: $26,000)\n\nAll users are email verified and ready for testing!"
+					},
+					"response": []
+				}
+			],
+			"description": "Test data and credentials for API testing"
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test User\",\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register a new user account"
+					},
+					"response": []
+				},
+				{
+					"name": "Login User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"alexander.johnson@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login user and get authentication token"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/auth/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Get authenticated user profile"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Profile (Alternative)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"user"
+							]
+						},
+						"description": "Get authenticated user profile (alternative endpoint for frontend compatibility)"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logout user and revoke token"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints for user registration, login, and profile management"
+		},
+		{
+			"name": "Wallet",
+			"item": [
+				{
+					"name": "Get Balance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/wallet/balance",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"wallet",
+								"balance"
+							]
+						},
+						"description": "Get current wallet balance"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Money",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 100.00\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/wallet/add-money",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"wallet",
+								"add-money"
+							]
+						},
+						"description": "Add money to wallet (for testing purposes)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/wallet/statistics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"wallet",
+								"statistics"
+							]
+						},
+						"description": "Get wallet statistics and transaction summary"
+					},
+					"response": []
+				}
+			],
+			"description": "Wallet management endpoints for balance, adding money, and statistics"
+		},
+		{
+			"name": "Transactions",
+			"item": [
+				{
+					"name": "Get All Transactions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/transactions?page=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"transactions"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get paginated list of user transactions"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Transaction",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"receiver_email\": \"sarah.williams@example.com\",\n    \"amount\": 500.00,\n    \"commission_fee\": 7.50\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/transactions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"transactions"
+							]
+						},
+						"description": "Create a new transaction (transfer money to another user)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Transaction Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/transactions/statistics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"transactions",
+								"statistics"
+							]
+						},
+						"description": "Get transaction statistics for the authenticated user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Transaction Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/transactions/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"transactions",
+								"1"
+							]
+						},
+						"description": "Get details of a specific transaction"
+					},
+					"response": []
+				}
+			],
+			"description": "Transaction management endpoints for money transfers and transaction history"
+		},
+		{
+			"name": "Beneficiaries",
+			"item": [
+				{
+					"name": "Get All Beneficiaries",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/beneficiaries?page=1&search=&favorites_only=false",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"beneficiaries"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number for pagination"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search by name, email, or nickname"
+								},
+								{
+									"key": "favorites_only",
+									"value": "false",
+									"description": "Show only favorite beneficiaries"
+								}
+							]
+						},
+						"description": "Get paginated list of user's beneficiaries with optional search and filtering"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Beneficiary",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"beneficiary_email\": \"sarah.williams@example.com\",\n    \"nickname\": \"Sarah\",\n    \"notes\": \"Close friend and business partner\",\n    \"is_favorite\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/beneficiaries",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"beneficiaries"
+							]
+						},
+						"description": "Add a new beneficiary to the user's list"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Beneficiary Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/beneficiaries/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"beneficiaries",
+								"1"
+							]
+						},
+						"description": "Get details of a specific beneficiary"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Beneficiary",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nickname\": \"Sarah Williams\",\n    \"notes\": \"Updated notes for Sarah\",\n    \"is_favorite\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/beneficiaries/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"beneficiaries",
+								"1"
+							]
+						},
+						"description": "Update beneficiary information (nickname, notes, favorite status)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Beneficiary",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/beneficiaries/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"beneficiaries",
+								"1"
+							]
+						},
+						"description": "Remove a beneficiary from the user's list"
+					},
+					"response": []
+				},
+				{
+					"name": "Toggle Favorite Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/beneficiaries/1/toggle-favorite",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"beneficiaries",
+								"1",
+								"toggle-favorite"
+							]
+						},
+						"description": "Toggle the favorite status of a beneficiary"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Beneficiary Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/beneficiaries/statistics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"beneficiaries",
+								"statistics"
+							]
+						},
+						"description": "Get beneficiary statistics and usage analytics"
+					},
+					"response": []
+				}
+			],
+			"description": "Beneficiary management endpoints for managing saved recipients and quick transfers"
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"description": "Base URL for the API"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"description": "Authentication token received from login"
+		},
+		{
+			"key": "test_user_email",
+			"value": "alexander.johnson@example.com",
+			"description": "Test user email for login"
+		},
+		{
+			"key": "test_user_password",
+			"value": "password123",
+			"description": "Test user password"
+		},
+		{
+			"key": "test_beneficiary_email",
+			"value": "sarah.williams@example.com",
+			"description": "Test beneficiary email for transactions"
+		}
+	]
+}
