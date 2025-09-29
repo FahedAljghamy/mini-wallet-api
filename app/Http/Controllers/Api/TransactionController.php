@@ -20,6 +20,7 @@ use App\Models\User;
 use App\Services\TransactionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Http\Requests\TestRequest;
 
 class TransactionController extends Controller
 {
@@ -45,32 +46,41 @@ class TransactionController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        // Get paginated transactions for the user
-        $transactions = Transaction::where('sender_id', $user->id)
-            ->orWhere('receiver_id', $user->id)
-            ->with(['sender', 'receiver'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            // Get paginated transactions for the user
+            $transactions = Transaction::where('sender_id', $user->id)
+                ->orWhere('receiver_id', $user->id)
+                ->with(['sender', 'receiver'])
+                ->orderBy('created_at', 'desc')
+                ->paginate(15);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Transactions retrieved successfully',
-            'data' => [
-                'user' => new UserResource($user),
-                'current_balance' => number_format($user->balance, 2),
-                'transactions' => TransactionResource::collection($transactions),
-                'pagination' => [
-                    'current_page' => $transactions->currentPage(),
-                    'last_page' => $transactions->lastPage(),
-                    'per_page' => $transactions->perPage(),
-                    'total' => $transactions->total(),
-                    'from' => $transactions->firstItem(),
-                    'to' => $transactions->lastItem(),
+            return response()->json([
+                'success' => true,
+                'message' => 'Transactions retrieved successfully',
+                'data' => [
+                    'user' => new UserResource($user),
+                    'current_balance' => number_format($user->balance, 2),
+                    'transactions' => TransactionResource::collection($transactions),
+                    'pagination' => [
+                        'current_page' => $transactions->currentPage(),
+                        'last_page' => $transactions->lastPage(),
+                        'per_page' => $transactions->perPage(),
+                        'total' => $transactions->total(),
+                        'from' => $transactions->firstItem(),
+                        'to' => $transactions->lastItem(),
+                    ],
                 ],
-            ],
-        ]);
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve transactions',
+                'error' => $e->getMessage(),
+                'error_code' => 'TRANSACTIONS_RETRIEVAL_FAILED',
+            ], 500);
+        }
     }
 
     /**
@@ -105,7 +115,7 @@ class TransactionController extends Controller
         } catch (\Exception $e) {
             $statusCode = 400;
             $errorCode = 'TRANSACTION_FAILED';
-            
+
             // Determine specific error type and status code
             if (str_contains($e->getMessage(), 'Insufficient balance')) {
                 $statusCode = 422;
@@ -117,7 +127,7 @@ class TransactionController extends Controller
                 $statusCode = 422;
                 $errorCode = 'UNVERIFIED_ACCOUNT';
             }
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Transaction failed',
@@ -133,28 +143,37 @@ class TransactionController extends Controller
      */
     public function show(Request $request, $id): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $transaction = Transaction::where('id', $id)
-            ->where(function ($query) use ($user) {
-                $query->where('sender_id', $user->id)
-                    ->orWhere('receiver_id', $user->id);
-            })
-            ->with(['sender', 'receiver'])
-            ->first();
+            $transaction = Transaction::where('id', $id)
+                ->where(function ($query) use ($user) {
+                    $query->where('sender_id', $user->id)
+                        ->orWhere('receiver_id', $user->id);
+                })
+                ->with(['sender', 'receiver'])
+                ->first();
 
-        if (! $transaction) {
+            if (! $transaction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaction not found',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaction retrieved successfully',
+                'data' => new TransactionResource($transaction),
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Transaction not found',
-            ], 404);
+                'message' => 'Failed to retrieve transaction',
+                'error' => $e->getMessage(),
+                'error_code' => 'TRANSACTION_RETRIEVAL_FAILED',
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Transaction retrieved successfully',
-            'data' => new TransactionResource($transaction),
-        ]);
     }
 
     /**
@@ -163,24 +182,33 @@ class TransactionController extends Controller
      */
     public function statistics(Request $request): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $stats = $this->transactionService->getUserTransactionStats($user->id);
+            $stats = $this->transactionService->getUserTransactionStats($user->id);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Statistics retrieved successfully',
-            'data' => [
-                'user' => new UserResource($user),
-                'statistics' => [
-                    'total_sent' => number_format($stats['total_sent'], 2),
-                    'total_received' => number_format($stats['total_received'], 2),
-                    'total_commission_paid' => number_format($stats['total_commission_paid'], 2),
-                    'sent_count' => $stats['sent_count'],
-                    'received_count' => $stats['received_count'],
-                    'total_transactions' => $stats['total_transactions'],
+            return response()->json([
+                'success' => true,
+                'message' => 'Statistics retrieved successfully',
+                'data' => [
+                    'user' => new UserResource($user),
+                    'statistics' => [
+                        'total_sent' => number_format($stats['total_sent'], 2),
+                        'total_received' => number_format($stats['total_received'], 2),
+                        'total_commission_paid' => number_format($stats['total_commission_paid'], 2),
+                        'sent_count' => $stats['sent_count'],
+                        'received_count' => $stats['received_count'],
+                        'total_transactions' => $stats['total_transactions'],
+                    ],
                 ],
-            ],
-        ]);
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve statistics',
+                'error' => $e->getMessage(),
+                'error_code' => 'STATISTICS_RETRIEVAL_FAILED',
+            ], 500);
+        }
     }
 }
