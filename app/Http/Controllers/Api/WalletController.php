@@ -19,15 +19,24 @@ class WalletController extends Controller
      */
     public function balance(Request $request)
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'balance' => $user->balance,
-                'currency' => 'USD',
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'balance' => $user->balance,
+                    'currency' => 'USD',
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve wallet balance',
+                'error' => $e->getMessage(),
+                'error_code' => 'BALANCE_RETRIEVAL_FAILED',
+            ], 500);
+        }
     }
 
     /**
@@ -36,29 +45,38 @@ class WalletController extends Controller
      */
     public function addMoney(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'amount' => 'required|numeric|min:0.01|max:10000',
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'amount' => 'required|numeric|min:0.01|max:10000',
+            ]);
 
-        if ($validator->fails()) {
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                    'error_code' => 'VALIDATION_ERROR',
+                ], 422);
+            }
+
+            $user = $request->user();
+            $user->increment('balance', $request->amount);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Money added successfully',
+                'data' => [
+                    'new_balance' => $user->fresh()->balance,
+                ],
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors(),
-                'error_code' => 'VALIDATION_ERROR',
-            ], 422);
+                'message' => 'Failed to add money to wallet',
+                'error' => $e->getMessage(),
+                'error_code' => 'ADD_MONEY_FAILED',
+            ], 500);
         }
-
-        $user = $request->user();
-        $user->increment('balance', $request->amount);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Money added successfully',
-            'data' => [
-                'new_balance' => $user->fresh()->balance,
-            ],
-        ]);
     }
 
     /**
@@ -67,25 +85,34 @@ class WalletController extends Controller
      */
     public function statistics(Request $request)
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $sentTransactions = $user->sentTransactions()->completed()->count();
-        $receivedTransactions = $user->receivedTransactions()->completed()->count();
-        $totalSent = $user->sentTransactions()->completed()->sum('amount');
-        $totalReceived = $user->receivedTransactions()->completed()->sum('amount');
-        $totalCommissionPaid = $user->sentTransactions()->completed()->sum('commission_fee');
+            $sentTransactions = $user->sentTransactions()->completed()->count();
+            $receivedTransactions = $user->receivedTransactions()->completed()->count();
+            $totalSent = $user->sentTransactions()->completed()->sum('amount');
+            $totalReceived = $user->receivedTransactions()->completed()->sum('amount');
+            $totalCommissionPaid = $user->sentTransactions()->completed()->sum('commission_fee');
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'current_balance' => $user->balance,
-                'total_sent' => $totalSent,
-                'total_received' => $totalReceived,
-                'total_commission_paid' => $totalCommissionPaid,
-                'sent_transactions_count' => $sentTransactions,
-                'received_transactions_count' => $receivedTransactions,
-                'total_transactions_count' => $sentTransactions + $receivedTransactions,
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'current_balance' => $user->balance,
+                    'total_sent' => $totalSent,
+                    'total_received' => $totalReceived,
+                    'total_commission_paid' => $totalCommissionPaid,
+                    'sent_transactions_count' => $sentTransactions,
+                    'received_transactions_count' => $receivedTransactions,
+                    'total_transactions_count' => $sentTransactions + $receivedTransactions,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve wallet statistics',
+                'error' => $e->getMessage(),
+                'error_code' => 'WALLET_STATISTICS_FAILED',
+            ], 500);
+        }
     }
 }

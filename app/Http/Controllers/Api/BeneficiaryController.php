@@ -28,46 +28,55 @@ class BeneficiaryController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $search = $request->get('search');
-        $favoritesOnly = $request->boolean('favorites_only');
+        try {
+            $user = $request->user();
+            $search = $request->get('search');
+            $favoritesOnly = $request->boolean('favorites_only');
 
-        $query = $user->beneficiaries()
-            ->with(['beneficiaryUser'])
-            ->orderBy('is_favorite', 'desc')
-            ->orderBy('created_at', 'desc');
+            $query = $user->beneficiaries()
+                ->with(['beneficiaryUser'])
+                ->orderBy('is_favorite', 'desc')
+                ->orderBy('created_at', 'desc');
 
-        // Apply search filter
-        if ($search) {
-            $query->search($search);
-        }
+            // Apply search filter
+            if ($search) {
+                $query->search($search);
+            }
 
-        // Apply favorites filter
-        if ($favoritesOnly) {
-            $query->favorites();
-        }
+            // Apply favorites filter
+            if ($favoritesOnly) {
+                $query->favorites();
+            }
 
-        $beneficiaries = $query->paginate(20);
+            $beneficiaries = $query->paginate(20);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Beneficiaries retrieved successfully',
-            'data' => [
-                'beneficiaries' => BeneficiaryResource::collection($beneficiaries),
-                'pagination' => [
-                    'current_page' => $beneficiaries->currentPage(),
-                    'last_page' => $beneficiaries->lastPage(),
-                    'per_page' => $beneficiaries->perPage(),
-                    'total' => $beneficiaries->total(),
-                    'from' => $beneficiaries->firstItem(),
-                    'to' => $beneficiaries->lastItem(),
+            return response()->json([
+                'success' => true,
+                'message' => 'Beneficiaries retrieved successfully',
+                'data' => [
+                    'beneficiaries' => BeneficiaryResource::collection($beneficiaries),
+                    'pagination' => [
+                        'current_page' => $beneficiaries->currentPage(),
+                        'last_page' => $beneficiaries->lastPage(),
+                        'per_page' => $beneficiaries->perPage(),
+                        'total' => $beneficiaries->total(),
+                        'from' => $beneficiaries->firstItem(),
+                        'to' => $beneficiaries->lastItem(),
+                    ],
+                    'filters' => [
+                        'search' => $search,
+                        'favorites_only' => $favoritesOnly,
+                    ],
                 ],
-                'filters' => [
-                    'search' => $search,
-                    'favorites_only' => $favoritesOnly,
-                ],
-            ],
-        ]);
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve beneficiaries',
+                'error' => $e->getMessage(),
+                'error_code' => 'BENEFICIARIES_RETRIEVAL_FAILED',
+            ], 500);
+        }
     }
 
     /**
@@ -76,24 +85,33 @@ class BeneficiaryController extends Controller
      */
     public function store(StoreBeneficiaryRequest $request): JsonResponse
     {
-        $user = $request->user();
-        $beneficiaryUser = User::where('email', $request->beneficiary_email)->first();
+        try {
+            $user = $request->user();
+            $beneficiaryUser = User::where('email', $request->beneficiary_email)->first();
 
-        $beneficiary = Beneficiary::create([
-            'user_id' => $user->id,
-            'beneficiary_user_id' => $beneficiaryUser->id,
-            'nickname' => $request->nickname,
-            'notes' => $request->notes,
-            'is_favorite' => $request->boolean('is_favorite', false),
-        ]);
+            $beneficiary = Beneficiary::create([
+                'user_id' => $user->id,
+                'beneficiary_user_id' => $beneficiaryUser->id,
+                'nickname' => $request->nickname,
+                'notes' => $request->notes,
+                'is_favorite' => $request->boolean('is_favorite', false),
+            ]);
 
-        $beneficiary->load('beneficiaryUser');
+            $beneficiary->load('beneficiaryUser');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Beneficiary added successfully',
-            'data' => new BeneficiaryResource($beneficiary),
-        ], 201);
+            return response()->json([
+                'success' => true,
+                'message' => 'Beneficiary added successfully',
+                'data' => new BeneficiaryResource($beneficiary),
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add beneficiary',
+                'error' => $e->getMessage(),
+                'error_code' => 'BENEFICIARY_CREATION_FAILED',
+            ], 500);
+        }
     }
 
     /**
@@ -102,24 +120,33 @@ class BeneficiaryController extends Controller
      */
     public function show(Request $request, $id): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $beneficiary = $user->beneficiaries()
-            ->with(['beneficiaryUser'])
-            ->find($id);
+            $beneficiary = $user->beneficiaries()
+                ->with(['beneficiaryUser'])
+                ->find($id);
 
-        if (!$beneficiary) {
+            if (!$beneficiary) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Beneficiary not found',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Beneficiary retrieved successfully',
+                'data' => new BeneficiaryResource($beneficiary),
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Beneficiary not found',
-            ], 404);
+                'message' => 'Failed to retrieve beneficiary',
+                'error' => $e->getMessage(),
+                'error_code' => 'BENEFICIARY_RETRIEVAL_FAILED',
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Beneficiary retrieved successfully',
-            'data' => new BeneficiaryResource($beneficiary),
-        ]);
     }
 
     /**
@@ -128,30 +155,39 @@ class BeneficiaryController extends Controller
      */
     public function update(UpdateBeneficiaryRequest $request, $id): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $beneficiary = $user->beneficiaries()->find($id);
+            $beneficiary = $user->beneficiaries()->find($id);
 
-        if (!$beneficiary) {
+            if (!$beneficiary) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Beneficiary not found',
+                ], 404);
+            }
+
+            $beneficiary->update([
+                'nickname' => $request->nickname,
+                'notes' => $request->notes,
+                'is_favorite' => $request->boolean('is_favorite', $beneficiary->is_favorite),
+            ]);
+
+            $beneficiary->load('beneficiaryUser');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Beneficiary updated successfully',
+                'data' => new BeneficiaryResource($beneficiary),
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Beneficiary not found',
-            ], 404);
+                'message' => 'Failed to update beneficiary',
+                'error' => $e->getMessage(),
+                'error_code' => 'BENEFICIARY_UPDATE_FAILED',
+            ], 500);
         }
-
-        $beneficiary->update([
-            'nickname' => $request->nickname,
-            'notes' => $request->notes,
-            'is_favorite' => $request->boolean('is_favorite', $beneficiary->is_favorite),
-        ]);
-
-        $beneficiary->load('beneficiaryUser');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Beneficiary updated successfully',
-            'data' => new BeneficiaryResource($beneficiary),
-        ]);
     }
 
     /**
@@ -160,23 +196,32 @@ class BeneficiaryController extends Controller
      */
     public function destroy(Request $request, $id): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $beneficiary = $user->beneficiaries()->find($id);
+            $beneficiary = $user->beneficiaries()->find($id);
 
-        if (!$beneficiary) {
+            if (!$beneficiary) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Beneficiary not found',
+                ], 404);
+            }
+
+            $beneficiary->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Beneficiary removed successfully',
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Beneficiary not found',
-            ], 404);
+                'message' => 'Failed to remove beneficiary',
+                'error' => $e->getMessage(),
+                'error_code' => 'BENEFICIARY_DELETION_FAILED',
+            ], 500);
         }
-
-        $beneficiary->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Beneficiary removed successfully',
-        ]);
     }
 
     /**
@@ -185,28 +230,37 @@ class BeneficiaryController extends Controller
      */
     public function toggleFavorite(Request $request, $id): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $beneficiary = $user->beneficiaries()->find($id);
+            $beneficiary = $user->beneficiaries()->find($id);
 
-        if (!$beneficiary) {
+            if (!$beneficiary) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Beneficiary not found',
+                ], 404);
+            }
+
+            $beneficiary->update([
+                'is_favorite' => !$beneficiary->is_favorite,
+            ]);
+
+            $beneficiary->load('beneficiaryUser');
+
+            return response()->json([
+                'success' => true,
+                'message' => $beneficiary->is_favorite ? 'Beneficiary marked as favorite' : 'Beneficiary removed from favorites',
+                'data' => new BeneficiaryResource($beneficiary),
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Beneficiary not found',
-            ], 404);
+                'message' => 'Failed to toggle favorite status',
+                'error' => $e->getMessage(),
+                'error_code' => 'FAVORITE_TOGGLE_FAILED',
+            ], 500);
         }
-
-        $beneficiary->update([
-            'is_favorite' => !$beneficiary->is_favorite,
-        ]);
-
-        $beneficiary->load('beneficiaryUser');
-
-        return response()->json([
-            'success' => true,
-            'message' => $beneficiary->is_favorite ? 'Beneficiary marked as favorite' : 'Beneficiary removed from favorites',
-            'data' => new BeneficiaryResource($beneficiary),
-        ]);
     }
 
     /**
@@ -215,23 +269,32 @@ class BeneficiaryController extends Controller
      */
     public function statistics(Request $request): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        $totalBeneficiaries = $user->beneficiaries()->count();
-        $favoriteBeneficiaries = $user->beneficiaries()->favorites()->count();
-        $recentBeneficiaries = $user->beneficiaries()
-            ->where('created_at', '>=', now()->subDays(30))
-            ->count();
+            $totalBeneficiaries = $user->beneficiaries()->count();
+            $favoriteBeneficiaries = $user->beneficiaries()->favorites()->count();
+            $recentBeneficiaries = $user->beneficiaries()
+                ->where('created_at', '>=', now()->subDays(30))
+                ->count();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Beneficiaries statistics retrieved successfully',
-            'data' => [
-                'total_beneficiaries' => $totalBeneficiaries,
-                'favorite_beneficiaries' => $favoriteBeneficiaries,
-                'recent_beneficiaries' => $recentBeneficiaries,
-                'regular_beneficiaries' => $totalBeneficiaries - $favoriteBeneficiaries,
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Beneficiaries statistics retrieved successfully',
+                'data' => [
+                    'total_beneficiaries' => $totalBeneficiaries,
+                    'favorite_beneficiaries' => $favoriteBeneficiaries,
+                    'recent_beneficiaries' => $recentBeneficiaries,
+                    'regular_beneficiaries' => $totalBeneficiaries - $favoriteBeneficiaries,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve beneficiaries statistics',
+                'error' => $e->getMessage(),
+                'error_code' => 'BENEFICIARIES_STATISTICS_FAILED',
+            ], 500);
+        }
     }
 }
